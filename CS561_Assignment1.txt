@@ -1,0 +1,190 @@
+Name: Kuo Zhang
+CWID: 10478257
+CS561-sectionA
+
+Query1:
+
+with
+
+part1 as (select cust as customer,min(quant) as min_q,max(quant)as max_q,round(avg(quant)) as avgq 
+from sales 
+group by customer),
+
+min as (select part1.customer,min_q,prod as min_prod, date as min_date, state as st from part1
+join sales
+on part1.CUSTOMER = sales.CUST and part1.MIN_Q = sales.QUANT
+order by customer),
+
+max as (select part1.customer,max_q,prod as max_prod, date as max_date, state as st from part1
+join sales
+on part1.CUSTOMER = sales.CUST and part1.max_Q = sales.QUANT
+order by customer)
+
+select  min.*,max.*,avgq as avg_q  from min
+join max
+on min.customer = max.customer full join part1 on min.customer = part1.customer
+
+
+
+Query2：
+
+with
+
+tablesum as(
+select year,month,day,sum(distinct quant) as sum_q from sales
+group by year,month,day
+order by year,month,day),
+
+tablemax as (
+select year,month,max(sum_q) as max_q from tablesum
+group by year,month
+order by year,month),
+
+tablemin as (
+select year,month,min(sum_q) as min_q from tablesum
+group by year,month
+order by year,month),
+
+tableslowday as (
+select tablemin.year,tablemin.month,day as SLOWEST_DAY,min_q as SLOWEST_TOTAL_Q from tablesum,tablemin
+where tablemin.min_q = tablesum.sum_q and tablemin.month = tablesum.month and tablemin.year = tablesum.year
+order by year),
+
+tablebusyday as( 
+select tablemax.year,tablemax.month ,day as BUSIEST_DAY, max_q as BUSIEST_TOTAL_Q from tablesum,tablemax
+where tablemax.max_q = tablesum.sum_q and tablemax.month = tablesum.month and tablemax.year = tablesum.year
+order by tablemax.year)
+
+select s.year,s.month,s.slowest_day,s.slowest_total_q,b.busiest_day,b.busiest_total_q from tableslowday as s
+join tablebusyday as b
+on s.year = b.year and s.month = b.month
+
+
+
+
+Query3:
+
+with 
+
+tableq as
+(select cust,month,prod,sum(quant) as total
+from sales
+group by cust,month,prod),
+
+tableminmax as
+(select cust,month,max(total) as max_q,min(total) as min_q
+from tableq
+group by cust,month),
+
+
+tablemaxp as (select m.cust as customer,q.month,prod as most_fav_prod from tableminmax m , tableq q
+where m.max_q = q.total and m.cust = q.cust),
+
+tableminp as (select m.cust as customer,q.month,prod as lease_fav_prod from tableminmax m , tableq q
+where m.min_q = q.total and m.cust = q.cust)
+
+select tablemaxp.customer,tableminp.month,most_fav_prod,lease_fav_prod from tablemaxp
+join tableminp
+on tablemaxp.month = tableminp.month and tablemaxp.customer = tableminp.customer
+
+
+
+
+Query4:
+
+with 
+tableq1 as
+(select distinct cust,prod,Round(avg(quant)) as q1
+from sales 
+where month in (1,2,3)
+group by cust,prod),
+
+tableq2 as
+(select distinct cust,prod,ROUND(avg(quant)) as q2
+from sales 
+where month in (4,5,6)
+group by cust,prod),
+
+tableq3 as
+(select distinct cust,prod,Round(avg(quant)) as q3
+from sales 
+where month in (7,8,9)
+group by cust,prod),
+
+tableq4 as
+(select distinct cust,prod,Round(avg(quant)) as q4
+from sales 
+where month in (10,11,12)
+group by cust,prod),
+
+table5 as
+(select distinct cust,prod,Round(avg(quant)) as Average,sum(quant) as Total,count(quant)
+from sales 
+group by cust,prod)
+
+select table5.cust as CUSTOMER,table5.prod as PRODUCT,
+tableq1.q1 as Q1_AVG,tableq2.q2 as Q2_AVG,tableq3.q3 as Q3_AVG,tableq4.q4 as Q4_AVG,
+table5.Average,table5.Total,table5.count
+from table5 
+left join tableq1 
+on table5.cust=tableq1.cust and table5.prod = tableq1.prod
+left join tableq2
+on table5.cust=tableq2.cust and table5.prod = tableq2.prod
+left join tableq3
+on table5.cust=tableq3.cust and table5.prod = tableq3.prod
+left join tableq4 
+on table5.cust=tableq4.cust and table5.prod = tableq4.prod
+order by table5.cust,table5.prod
+
+
+
+
+Query5:
+
+with 
+
+part1 as(
+select prod,max(quant) as Q1_MAX
+from sales where month in (1,2,3)
+group by prod
+),
+
+part11 as (select part1.prod,part1.Q1_MAX,date from part1 left join sales on part1.prod =sales.prod and part1.Q1_MAX=sales.quant
+where month in (1,2,3) ),
+
+part2  as(
+select prod,max(quant) as Q2_MAX
+from sales where month in (4,5,6)
+group by prod
+),
+part22 as (select part2.prod,part2.Q2_MAX,date from part2 left join sales on part2.prod =sales.prod and part2.Q2_MAX=sales.quant
+where month in (4,5,6) ),
+
+part3  as(
+select prod,max(quant) as Q3_MAX
+from sales where month in (7,8,9)
+group by prod
+),
+part33 as (select part3.prod,part3.Q3_MAX,date from part3 left join sales on part3.prod =sales.prod and part3.Q3_MAX=sales.quant
+where month in (7,8,9) ),
+
+part4  as(
+select prod,max(quant) as Q4_MAX
+from sales where month in (10,11,12)
+group by prod
+),
+part44 as (select part4.prod,part4.Q4_MAX,date from part4 left join sales on part4.prod =sales.prod and part4.Q4_MAX=sales.quant
+where month in (10,11,12) )
+
+
+select distinct
+sales.prod,part11.Q1_MAX,part11.date, part22.Q2_MAX ,part22.date, part33.Q3_MAX,part33.date,part44.Q4_MAX,part44.date
+from sales 
+left join part11 
+on sales.prod = part11.prod
+left join part22
+on  sales.prod = part22.prod
+left join part33
+on sales.prod = part33.prod
+left join part44 
+on sales.prod = part44.prod
