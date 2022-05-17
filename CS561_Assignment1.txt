@@ -1,5 +1,5 @@
 Name: Kuo Zhang
-CWID: 10478257
+
 CS561-sectionA
 
 Query1:
